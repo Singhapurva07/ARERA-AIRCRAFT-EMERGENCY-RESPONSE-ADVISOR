@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Aircraft Ground Emergency Response Advisor</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1626;
+    --bg3: #151d30;
+    --bg4: #1c2640;
+    --border: #1e2d4d;
+    --border2: #2a3f66;
+    --accent: #0066ff;
+    --accent2: #0044cc;
+    --accent-glow: rgba(0,102,255,0.15);
+    --text: #e8eef8;
+    --text2: #8fa8cc;
+    --text3: #4a6080;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Rajdhani', sans-serif;
+    --body: 'Inter', sans-serif;
+    --red: #ff3b3b;
+    --orange: #ff8c00;
+    --yellow: #ffc107;
+    --green: #00c851;
+    --rad: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--head);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .status-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media(max-width:800px){ .container{ grid-template-columns:1fr; } }
+
+  /* ── Panels ── */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--rad);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg3);
+  }
+  .panel-title {
+    font-family: var(--head);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+  .panel-body { padding: 16px; }
+
+  /* ── Form Elements ── */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 6px;
+    font-family: var(--head);
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--rad);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field textarea { min-height: 110px; line-height: 1.6; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--text3); }
+  .field select option { background: var(--bg3); }
+
+  /* ── Two-col grid ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Severity Picker ── */
+  .sev-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 8px 12px;
+    border-radius: var(--rad);
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    margin-bottom: 14px;
+  }
+  .sev-hint .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sev-LOW    { color: var(--green);  } .sev-LOW .dot    { background: var(--green); }
+  .sev-MEDIUM { color: var(--yellow); } .sev-MEDIUM .dot { background: var(--yellow); }
+  .sev-HIGH   { color: var(--orange); } .sev-HIGH .dot   { background: var(--orange); }
+  .sev-CRITICAL { color: var(--red); } .sev-CRITICAL .dot { background: var(--red); box-shadow: 0 0 6px var(--red); animation: pulse 1s infinite; }
+
+  /* ── Quick Scenarios ── */
+  .scenarios {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .scenario-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--rad);
+    color: var(--text2);
+    font-size: 11px;
+    font-family: var(--head);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .scenario-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+    background: var(--bg4);
+  }
+  .scenario-icon { font-size: 13px; }
+
+  /* ── Submit Button ── */
+  .btn-analyze {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--rad);
+    color: #fff;
+    font-family: var(--head);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-analyze:hover:not(:disabled) { background: #0055dd; }
+  .btn-analyze:active:not(:disabled) { transform: scale(0.98); }
+  .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Response Panel ── */
+  .response-area {
+    min-height: 400px;
+  }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 380px;
+    color: var(--text3);
+    gap: 12px;
+    text-align: center;
+  }
+  .empty-icon {
+    font-size: 40px;
+    opacity: 0.3;
+  }
+  .empty-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── Loading ── */
+  .loading-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 380px;
+    gap: 20px;
+  }
+  .radar {
+    width: 60px; height: 60px;
+    position: relative;
+  }
+  .radar-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    animation: radar-expand 2s ease-out infinite;
+  }
+  .radar-ring:nth-child(1){ width:60px;height:60px;top:0;left:0; }
+  .radar-ring:nth-child(2){ width:60px;height:60px;top:0;left:0; animation-delay:0.7s; }
+  .radar-ring:nth-child(3){ width:60px;height:60px;top:0;left:0; animation-delay:1.4s; }
+  .radar-center {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    box-shadow: 0 0 10px var(--accent);
+  }
+  @keyframes radar-expand {
+    0%   { transform: scale(0.2); opacity: 1; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  .loading-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Result ── */
+  #result-container { display: none; }
+
+  .result-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .meta-label {
+    font-size: 10px;
+    font-family: var(--head);
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .meta-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 600;
+    letter-spacing: 1px;
+    width: fit-content;
+  }
+  .badge-LOW      { background: rgba(0,200,81,0.15);   color: var(--green);  border: 1px solid rgba(0,200,81,0.3); }
+  .badge-MEDIUM   { background: rgba(255,193,7,0.15);  color: var(--yellow); border: 1px solid rgba(255,193,7,0.3); }
+  .badge-HIGH     { background: rgba(255,140,0,0.15);  color: var(--orange); border: 1px solid rgba(255,140,0,0.3); }
+  .badge-CRITICAL { background: rgba(255,59,59,0.15);  color: var(--red);    border: 1px solid rgba(255,59,59,0.3); }
+
+  .advice-body {
+    padding: 20px;
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ── Action Bar ── */
+  .action-bar {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    background: var(--bg3);
+    flex-wrap: wrap;
+  }
+  .btn-sm {
+    padding: 7px 14px;
+    border-radius: var(--rad);
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
+  .btn-sm.copy-done { color: var(--green); border-color: var(--green); }
+
+  /* ── History ── */
+  .history-panel {
+    margin-top: 20px;
+    display: none;
+  }
+  .history-list { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .history-item {
+    padding: 10px 12px;
+    border-radius: var(--rad);
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .history-item:hover { border-color: var(--accent); }
+  .history-incident {
+    font-size: 12px;
+    color: var(--text2);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+
+  /* ── Error ── */
+  .error-box {
+    margin: 20px;
+    padding: 14px 16px;
+    border-radius: var(--rad);
+    border: 1px solid rgba(255,59,59,0.4);
+    background: rgba(255,59,59,0.08);
+    color: #ff6b6b;
+    font-family: var(--mono);
+    font-size: 12px;
+    display: none;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    border-top: 1px solid var(--border);
+    letter-spacing: 1px;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">✈</div>
+    ARERA &mdash; AIRCRAFT EMERGENCY RESPONSE ADVISOR
+  </div>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <span class="status-text">SYSTEM ONLINE</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- LEFT: Input Panel -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Incident Input</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">LIVE</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Quick Scenarios -->
+        <div class="field">
+          <label>Quick Scenarios</label>
+          <div class="scenarios">
+            <button class="scenario-btn" onclick="loadScenario('fire')"><span class="scenario-icon">🔥</span>Engine Fire</button>
+            <button class="scenario-btn" onclick="loadScenario('fuel')"><span class="scenario-icon">⛽</span>Fuel Leak</button>
+            <button class="scenario-btn" onclick="loadScenario('medical')"><span class="scenario-icon">🏥</span>Medical Emergency</button>
+            <button class="scenario-btn" onclick="loadScenario('bird')"><span class="scenario-icon">🦅</span>Bird Strike</button>
+            <button class="scenario-btn" onclick="loadScenario('runway')"><span class="scenario-icon">🛬</span>Runway Incursion</button>
+            <button class="scenario-btn" onclick="loadScenario('bomb')"><span class="scenario-icon">⚠️</span>Security Threat</button>
+          </div>
+        </div>
+
+        <!-- Incident description -->
+        <div class="field">
+          <label>Incident Description *</label>
+          <textarea id="incident" placeholder="Describe the emergency in detail. E.g: Fuel leak detected under left wing of Boeing 737 at Gate 14 during pushback. Smoke visible near engine nacelle."></textarea>
+        </div>
+
+        <!-- Live severity hint -->
+        <div id="sev-hint" class="sev-hint sev-LOW">
+          <div class="dot"></div>
+          <span id="sev-text" style="font-size:11px;">AUTO-DETECTED SEVERITY: LOW</span>
+        </div>
+
+        <!-- Airport + Aircraft -->
+        <div class="grid2">
+          <div class="field">
+            <label>Airport Code</label>
+            <input id="airport" type="text" placeholder="e.g. VIDP, OMDB" maxlength="10"/>
+          </div>
+          <div class="field">
+            <label>Aircraft Type</label>
+            <input id="aircraft" type="text" placeholder="e.g. Boeing 737"/>
+          </div>
+        </div>
+
+        <!-- Priority -->
+        <div class="field">
+          <label>Response Priority</label>
+          <select id="priority">
+            <option value="standard">Standard Response</option>
+            <option value="rapid">Rapid Response (concise)</option>
+            <option value="detailed">Detailed Response (maximum detail)</option>
+          </select>
+        </div>
+
+        <button class="btn-analyze" id="analyzeBtn" onclick="analyze()">
+          ⚡ ANALYZE INCIDENT
+        </button>
+
+      </div>
+    </div>
+
+    <!-- History Panel -->
+    <div class="panel history-panel" id="historyPanel">
+      <div class="panel-header">
+        <span class="panel-title">Recent Incidents</span>
+        <button class="btn-sm" onclick="clearHistory()" style="padding:4px 10px;font-size:10px;">CLEAR</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Response Panel -->
+  <div class="panel response-area">
+    <div class="panel-header">
+      <span class="panel-title">Emergency Response</span>
+      <span id="timer-display" style="font-family:var(--mono);font-size:11px;color:var(--text3);"></span>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📡</div>
+      <div class="empty-label">Awaiting Incident Report</div>
+      <div style="font-size:12px;color:var(--text3);max-width:280px;">Describe the emergency on the left and click Analyze to receive AI-powered ground crew response procedures.</div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loadingState">
+      <div class="radar">
+        <div class="radar-ring"></div>
+        <div class="radar-ring"></div>
+        <div class="radar-ring"></div>
+        <div class="radar-center"></div>
+      </div>
+      <div class="loading-text">ANALYZING INCIDENT...</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);" id="loadingSubtext">CONNECTING TO AI ADVISOR</div>
+    </div>
+
+    <!-- Error Box -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Result Container -->
+    <div id="result-container">
+      <div class="result-meta" id="resultMeta"></div>
+      <div class="advice-body" id="adviceBody"></div>
+      <div class="action-bar">
+        <button class="btn-sm" id="copyBtn" onclick="copyAdvice()">📋 COPY REPORT</button>
+        <button class="btn-sm" onclick="printAdvice()">🖨 PRINT</button>
+        <button class="btn-sm" onclick="newIncident()">🔄 NEW INCIDENT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  ARERA v2.0 &nbsp;|&nbsp; AI-POWERED AIRCRAFT GROUND EMERGENCY ADVISOR &nbsp;|&nbsp;
+  FOR TRAINING & ADVISORY USE ONLY &nbsp;|&nbsp; ALWAYS FOLLOW OFFICIAL ICAO / ARFF PROTOCOLS
+</footer>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const API_URL = "https://dqhgozrhub.execute-api.us-east-1.amazonaws.com/analyze";
+
+// ── Severity Detection (mirrors Lambda logic) ────────────────────────────────
+const SEVERITY_MAP = {
+  CRITICAL: ["fire","explosion","crash","collision","bomb","hijack","evacuation","structural failure","toxic","hazmat"],
+  HIGH:     ["fuel leak","engine failure","smoke","runway incursion","medical emergency","bird strike"],
+  MEDIUM:   ["hydraulic","brake failure","lightning strike","fod","ground vehicle","spill"],
+  LOW:      []
+};
+
+function detectSeverity(text) {
+  const lower = text.toLowerCase();
+  for (const [level, kws] of Object.entries(SEVERITY_MAP)) {
+    for (const kw of kws) { if (lower.includes(kw)) return level; }
+  }
+  return "LOW";
+}
+
+// ── Live severity as user types ──────────────────────────────────────────────
+document.getElementById("incident").addEventListener("input", function() {
+  const sev = detectSeverity(this.value);
+  const hint = document.getElementById("sev-hint");
+  const txt  = document.getElementById("sev-text");
+  hint.className = `sev-hint sev-${sev}`;
+  txt.textContent = `AUTO-DETECTED SEVERITY: ${sev}`;
+});
+
+// ── Quick Scenarios ──────────────────────────────────────────────────────────
+const SCENARIOS = {
+  fire:    { incident: "Engine fire reported on #2 engine during taxi to runway. Flames visible from cockpit. Aircraft is a Boeing 737-800 at taxiway Bravo.", airport: "VIDP", aircraft: "Boeing 737-800" },
+  fuel:    { incident: "Fuel leak detected under left wing during pushback from Gate 14. Strong fuel smell, wet ground under aircraft belly.", airport: "OMDB", aircraft: "Airbus A320" },
+  medical: { incident: "Passenger cardiac arrest reported on board, aircraft still at gate. Crew requesting immediate medical assistance and defibrillator.", airport: "EGLL", aircraft: "Boeing 777-300" },
+  bird:    { incident: "Bird strike reported on final approach. Possible engine ingestion. Aircraft declared emergency and is on short final runway 28L.", airport: "KJFK", aircraft: "Airbus A321" },
+  runway:  { incident: "Ground vehicle has entered runway 09-27 without clearance. Aircraft on short final has been instructed to go around. Vehicle location unknown.", airport: "VHHH", aircraft: "" },
+  bomb:    { incident: "Anonymous threat received indicating explosive device on board aircraft at Gate C7. Passengers have not yet boarded. Threat level unconfirmed.", airport: "YSSY", aircraft: "Boeing 787-9" }
+};
+
+function loadScenario(key) {
+  const s = SCENARIOS[key];
+  document.getElementById("incident").value = s.incident;
+  document.getElementById("airport").value  = s.airport;
+  document.getElementById("aircraft").value = s.aircraft;
+  document.getElementById("incident").dispatchEvent(new Event("input"));
+}
+
+// ── History ──────────────────────────────────────────────────────────────────
+let history = JSON.parse(localStorage.getItem("arera_history") || "[]");
+
+function saveHistory(incident, severity) {
+  history.unshift({ incident: incident.slice(0,80), severity, time: new Date().toLocaleTimeString() });
+  if (history.length > 5) history.pop();
+  localStorage.setItem("arera_history", JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const panel = document.getElementById("historyPanel");
+  const list  = document.getElementById("historyList");
+  if (history.length === 0) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  list.innerHTML = history.map((h,i) => `
+    <div class="history-item" onclick="loadHistory(${i})">
+      <span class="badge badge-${h.severity}" style="flex-shrink:0;">${h.severity}</span>
+      <span class="history-incident">${h.incident}</span>
+      <span class="history-time">${h.time}</span>
+    </div>
+  `).join("");
+}
+
+function loadHistory(i) {
+  document.getElementById("incident").value = history[i].incident;
+  document.getElementById("incident").dispatchEvent(new Event("input"));
+}
+
+function clearHistory() {
+  history = [];
+  localStorage.removeItem("arera_history");
+  renderHistory();
+}
+
+renderHistory();
+
+// ── UI Helpers ────────────────────────────────────────────────────────────────
+function show(id)  { document.getElementById(id).style.display = "flex"; }
+function hide(id)  { document.getElementById(id).style.display = "none"; }
+function block(id) { document.getElementById(id).style.display = "block"; }
+
+function setState(state) {
+  hide("emptyState"); hide("loadingState");
+  document.getElementById("errorBox").style.display = "none";
+  document.getElementById("result-container").style.display = "none";
+  if (state === "empty")   show("emptyState");
+  if (state === "loading") show("loadingState");
+  if (state === "result")  block("result-container");
+  if (state === "error")   document.getElementById("errorBox").style.display = "block";
+}
+
+// ── Loading messages cycling ──────────────────────────────────────────────────
+const LOADING_MSGS = [
+  "CONNECTING TO AI ADVISOR",
+  "PARSING INCIDENT PARAMETERS",
+  "CROSS-REFERENCING ICAO PROTOCOLS",
+  "CALCULATING SEVERITY MATRIX",
+  "GENERATING ARFF RESPONSE PLAN",
+  "COMPILING EMERGENCY PROCEDURES"
+];
+let loadInterval;
+function startLoadingCycle() {
+  let i = 0;
+  document.getElementById("loadingSubtext").textContent = LOADING_MSGS[0];
+  loadInterval = setInterval(() => {
+    i = (i + 1) % LOADING_MSGS.length;
+    document.getElementById("loadingSubtext").textContent = LOADING_MSGS[i];
+  }, 1800);
+}
+function stopLoadingCycle() { clearInterval(loadInterval); }
+
+// ── Timer ────────────────────────────────────────────────────────────────────
+let timerStart;
+function startTimer() { timerStart = Date.now(); }
+function getElapsed() { return ((Date.now() - timerStart) / 1000).toFixed(1) + "s"; }
+
+// ── Main Analyze Function ─────────────────────────────────────────────────────
+async function analyze() {
+  const incident  = document.getElementById("incident").value.trim();
+  const airport   = document.getElementById("airport").value.trim();
+  const aircraft  = document.getElementById("aircraft").value.trim();
+  const priority  = document.getElementById("priority").value;
+
+  if (!incident) {
+    document.getElementById("errorBox").textContent = "ERROR: Incident description is required.";
+    setState("error"); return;
+  }
+  if (incident.length > 2000) {
+    document.getElementById("errorBox").textContent = "ERROR: Incident description exceeds 2000 characters.";
+    setState("error"); return;
+  }
+
+  const btn = document.getElementById("analyzeBtn");
+  btn.disabled = true;
+  document.getElementById("timer-display").textContent = "";
+  setState("loading");
+  startLoadingCycle();
+  startTimer();
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        incident,
+        airport_code:  airport,
+        aircraft_type: aircraft,
+        priority
+      })
+    });
+
+    stopLoadingCycle();
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const elapsed = getElapsed();
+    document.getElementById("timer-display").textContent = `RESPONSE TIME: ${data.duration_ms || elapsed}ms`;
+
+    const sev = data.severity || "LOW";
+    saveHistory(incident, sev);
+
+    // Build meta bar
+    document.getElementById("resultMeta").innerHTML = `
+      <div class="meta-item">
+        <span class="meta-label">Severity</span>
+        <span class="badge badge-${sev}">${sev}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Request ID</span>
+        <span class="meta-value">${(data.request_id || "N/A").slice(0,12)}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Airport</span>
+        <span class="meta-value">${data.airport_code || "—"}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Aircraft</span>
+        <span class="meta-value">${data.aircraft_type || "—"}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Model</span>
+        <span class="meta-value">${data.model_used || "llama3"}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Timestamp</span>
+        <span class="meta-value">${data.timestamp ? data.timestamp.slice(0,19).replace("T"," ") : new Date().toISOString().slice(0,19).replace("T"," ")}</span>
+      </div>
+    `;
+
+    document.getElementById("adviceBody").textContent = data.advice || "No response received.";
+    setState("result");
+
+  } catch(e) {
+    stopLoadingCycle();
+    document.getElementById("errorBox").textContent = `ERROR: ${e.message}`;
+    setState("error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Copy ──────────────────────────────────────────────────────────────────────
+function copyAdvice() {
+  const text = document.getElementById("adviceBody").textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copyBtn");
+    btn.textContent = "✅ COPIED";
+    btn.classList.add("copy-done");
+    setTimeout(() => { btn.textContent = "📋 COPY REPORT"; btn.classList.remove("copy-done"); }, 2000);
+  });
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+function printAdvice() {
+  const advice = document.getElementById("adviceBody").textContent;
+  const meta   = document.getElementById("resultMeta").innerText;
+  const w = window.open("", "_blank");
+  w.document.write(`<html><head><title>Emergency Response Report</title>
+  <style>body{font-family:monospace;padding:30px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.7}
+  h1{font-size:18px;margin-bottom:8px} .meta{color:#555;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:12px}
+  pre{white-space:pre-wrap;word-break:break-word} .footer{margin-top:30px;border-top:1px solid #ccc;padding-top:10px;font-size:11px;color:#888}
+  </style></head><body>
+  <h1>AIRCRAFT GROUND EMERGENCY RESPONSE REPORT</h1>
+  <div class="meta">${meta}</div>
+  <pre>${advice}</pre>
+  <div class="footer">Generated by ARERA — FOR TRAINING & ADVISORY USE ONLY. Always follow official ICAO/ARFF protocols.</div>
+  </body></html>`);
+  w.document.close();
+  w.print();
+}
+
+// ── New Incident ──────────────────────────────────────────────────────────────
+function newIncident() {
+  document.getElementById("incident").value = "";
+  document.getElementById("airport").value  = "";
+  document.getElementById("aircraft").value = "";
+  document.getElementById("sev-hint").className = "sev-hint sev-LOW";
+  document.getElementById("sev-text").textContent = "AUTO-DETECTED SEVERITY: LOW";
+  document.getElementById("timer-display").textContent = "";
+  setState("empty");
+}
+
+// ── Enter key submit ──────────────────────────────────────────────────────────
+document.getElementById("incident").addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.key === "Enter") analyze();
+});
+</script>
+</body>
+</html>
